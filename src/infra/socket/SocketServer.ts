@@ -8,6 +8,7 @@ import { GetTableUseCase } from '../../usecases/GetTable/GetTableUseCase';
 import { AddPieceUseCase } from '../../usecases/AddPiece/AddPieceUseCase';
 import { RestartUseCase } from '../../usecases/Restart/RestartUseCase';
 import { DisconnectUseCase } from '../../usecases/Disconnect/DisconnectUseCase';
+import { RemovePlayerUseCase } from '../../usecases/RemovePlayer/RemovePlayerUseCase';
 
 export class SocketServer {
   private io: Server
@@ -19,6 +20,7 @@ export class SocketServer {
   start() {
     const game = new InMemoryGameRepository();
     const createPlayerUseCase = new CreatePlayerUseCase(game);
+    const removePlayerUseCase = new RemovePlayerUseCase(game);
     const createRoomUseCase = new CreateRoomUseCase(game);
     const joinRoomUseCase = new JoinRoomUseCase(game);
     const getTableUseCase = new GetTableUseCase(game);
@@ -37,6 +39,17 @@ export class SocketServer {
         } catch (error) {
           const parsedError = error as Error;
           socket.emit("error", parsedError?.message || "ERROR_CREATE_PLAYER");
+        }
+      });
+
+      socket.on('removePlayer', () => {
+        try {
+          removePlayerUseCase.execute({ playerId: socket.id });
+          socket.emit("playerRemoved", { id: socket.id })
+          console.log(`Player removed: ${socket.id}`);
+        } catch (error) {
+          const parsedError = error as Error;
+          socket.emit("error", parsedError?.message || "ERROR_REMOVE_PLAYER");
         }
       });
 
